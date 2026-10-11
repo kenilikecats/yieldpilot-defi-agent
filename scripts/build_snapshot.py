@@ -56,7 +56,7 @@ FIELDS = [
 ]
 
 
-def get(url, retries=3):
+def get(url, retries=6):
     for i in range(retries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "defi-yield-agent/1.0"})
@@ -65,8 +65,9 @@ def get(url, retries=3):
         except Exception as e:  # noqa: BLE001
             if i == retries - 1:
                 raise
-            print("retry", url, e)
-            time.sleep(2 + i * 3)
+            wait = 15 * (i + 1) if "429" in str(e) else 3 + i * 3
+            print("retry", url, e, f"(sleep {wait}s)")
+            time.sleep(wait)
 
 
 def pick(pools, project, chain, symbol, meta):
@@ -82,7 +83,14 @@ def pick(pools, project, chain, symbol, meta):
 
 
 def main():
-    pools = get("https://yields.llama.fi/pools")["data"]
+    previous = {}
+    if OUT.exists():
+        previous = {p["pool"]: p for p in json.loads(OUT.read_text(encoding="utf-8"))["pools"]}
+    try:
+        pools = get("https://yields.llama.fi/pools")["data"]
+    except Exception as e:  # noqa: BLE001
+        print("pool list unavailable, keeping existing snapshot:", e)
+        return
     chosen, seen = [], set()
     for rule in UNIVERSE:
         p = pick(pools, *rule)
@@ -93,7 +101,21 @@ def main():
 
     cutoff = time.time() - HISTORY_DAYS * 86400
     for p in chosen:
-        hist = get(f"https://yields.llama.fi/chart/{p['pool']}")["data"]
+        try:
+            hist = get(f"https://yields.llama.fi/chart/{p['pool']}")["data"]
+        except Exception as e:  # noqa: BLE001
+            old = previous.get(p["pool"])
+            if not old:
+                print("  skip", p["project"], p["symbol"], e)
+                p["history"] = []
+                continue
+            # reuse cached history and append today's point from the live pool list
+            today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            series = [h for h in old["history"] if h[0] != today]
+            series.append([today, round(p["apy"], 4), round(p["tvlUsd"])])
+            p["history"] = series[-(HISTORY_DAYS + 1):]
+            print("  cached", p["project"], p["symbol"])
+            continue
         series = []
         for h in hist:
             ts = datetime.fromisoformat(h["timestamp"].replace("Z", "+00:00")).timestamp()
@@ -101,7 +123,7 @@ def main():
                 series.append([h["timestamp"][:10], round(h["apy"], 4), round(h.get("tvlUsd") or 0)])
         p["history"] = series
         print(f"  {p['project']:<16}{p['symbol']:<14}{len(series)} days")
-        time.sleep(0.25)
+        time.sleep(1.2)
 
     prices = {}
     for cid, key in [("coingecko:ethereum", "ETH"), ("coingecko:bitcoin", "BTC")]:
@@ -111,6 +133,7 @@ def main():
             for x in data["coins"][cid]["prices"]
         ]
 
+    chosen = [p for p in chosen if p["history"]]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
