@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YieldPilot DeFi Agent</title>
+  <meta name="description" content="DeFi 智能投資 AI Agent POC：收益預測、風險建模、自動配置、回測與強化學習再平衡。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23b87333'/><path d='M8 21l6-6 4 4 7-8' stroke='%231c1c1e' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<button class="mobile-menu-toggle" id="menuToggle" aria-label="開啟選單">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+</button>
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="dashboard">
+  <!-- ================= Sidebar ================= -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
+      <div><div class="logo-text">YieldPilot</div><div class="logo-sub">DeFi AI AGENT · POC</div></div>
+    </div>
+    <nav>
+      <div class="nav-section">
+        <div class="nav-label">主要功能</div>
+        <a class="nav-item active" data-page="overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>市場總覽</a>
+        <a class="nav-item" data-page="agent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 12h.01M15 12h.01M9 16h6"/></svg>AI 投資 Agent<span class="nav-badge">AI</span></a>
+        <a class="nav-item" data-page="protocols"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5M3 17l9 5 9-5"/></svg>協議風險分析</a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">量化實驗室</div>
+        <a class="nav-item" data-page="backtest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>策略回測</a>
+        <a class="nav-item" data-page="rl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>強化學習</a>
+        <a class="nav-item" data-page="monitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>即時監控再平衡</a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">專題</div>
+        <a class="nav-item" data-page="about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>專題說明與架構</a>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="theme-toggle"><span>淺色模式</span><button class="switch" id="themeSwitch" aria-label="切換淺色模式"></button></div>
+      <a class="nav-item" id="openSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>LLM 設定<span class="nav-badge" id="llmBadge">離線</span></a>
+      <div class="data-stamp" id="dataStamp">資料載入中…</div>
+    </div>
+  </aside>
+
+  <!-- ================= Main ================= -->
+  <main class="main-content">
+
+    <!-- ---------- Overview ---------- -->
+    <section class="page active" id="page-overview">
+      <div class="header">
+        <div><h1>DeFi 市場總覽</h1><div class="header-subtitle">追蹤 15 個主流協議、30 個收益池的 APY、TVL 與風險訊號</div></div>
+        <div class="header-right">
+          <button class="icon-btn" data-sync><span class="live-dot" data-live></span><span data-sync-label>同步即時資料</span></button>
+          <button class="btn primary sm" data-go="agent">開始 AI 配置 →</button>
+        </div>
+      </div>
+      <div class="grid g4" id="ovStats"></div>
+      <div class="grid g-2-1">
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">收益率走勢</div><div class="card-desc">各類別代表性收益池近一年 APY（%）</div></div>
+            <div class="seg" id="ovRange"><button data-r="90">3M</button><button data-r="180">6M</button><button class="active" data-r="365">1Y</button></div></div>
+          <div class="chart-box lg"><canvas id="ovApyChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">風險 × 收益地圖</div><div class="card-desc">X：風險分數 · Y：30 日預測 APY</div></div></div>
+          <div class="chart-box lg"><canvas id="ovScatter"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div><div class="card-title">AI 機會雷達</div><div class="card-desc">依「風險調整後預測收益」排序，點擊查看詳細分析</div></div></div>
+        <div class="table-wrap"><table id="ovRadar"></table></div>
+      </div>
+    </section>
+
+    <!-- ---------- Agent ---------- -->
+    <section class="page" id="page-agent">
+      <div class="header">
+        <div><h1>AI 投資 Agent</h1><div class="header-subtitle">用自然語言描述你的需求，Agent 會自動感知市場 → 評估風險 → 預測收益 → 最佳化配置 → 壓力測試 → 解釋策略</div></div>
+      </div>
+      <div class="agent-grid">
+        <div class="card chat">
+          <div class="card-header" style="margin-bottom:10px"><div class="card-title">對話</div><span class="pill acc" id="agentMode">規則引擎</span></div>
+          <div class="chat-log" id="chatLog"></div>
+          <div class="chips" id="chips">
+            <button class="chip">我有 10 萬美元，想穩健配置，只要穩定幣</button>
+            <button class="chip">5 萬 USDC 平衡型，放 6 個月，只用 Ethereum 和 Base</button>
+            <button class="chip">我能承受高風險，2 萬美元追求高收益</button>
+            <button class="chip">為什麼不配置 Ethena？</button>
+          </div>
+          <div class="chat-input">
+            <textarea class="form-input" id="chatText" placeholder="例如：我有 3 萬美元，風險中等，想放一年…"></textarea>
+            <button class="btn primary" id="chatSend" aria-label="送出"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:22px;min-width:0">
+          <div class="card">
+            <div class="card-header" style="margin-bottom:12px"><div class="card-title">投資參數</div><span class="card-desc">對話會自動帶入</span></div>
+            <div class="form-row">
+              <div><label class="form-label" for="pCapital">投資金額（USD）</label><input class="form-input num" id="pCapital" type="number" value="10000" min="100" step="100"></div>
+              <div><label class="form-label" for="pHorizon">投資期間（天）</label><input class="form-input num" id="pHorizon" type="number" value="180" min="7"></div>
+            </div>
+            <label class="form-label">風險偏好</label>
+            <div class="seg" id="pProfile" style="margin-bottom:14px"><button data-v="conservative">保守型</button><button data-v="balanced" class="active">平衡型</button><button data-v="aggressive">積極型</button></div>
+            <label class="form-label">限制條件</label>
+            <div style="margin-bottom:14px">
+              <label class="chk"><input type="checkbox" id="pStable">只配置穩定幣</label>
+              <label class="chk"><input type="checkbox" class="pChain" value="Ethereum" checked>Ethereum</label>
+              <label class="chk"><input type="checkbox" class="pChain" value="Arbitrum" checked>Arbitrum</label>
+              <label class="chk"><input type="checkbox" class="pChain" value="Base" checked>Base</label>
+            </div>
+            <button class="btn primary" id="runAgent" style="width:100%">▶ 執行 Agent</button>
+          </div>
+          <div class="card" style="flex:1">
+            <div class="card-header" style="margin-bottom:14px"><div class="card-title">Agent 執行軌跡</div><span class="card-desc" id="traceTime"></span></div>
+            <ul class="trace" id="trace"></ul>
+          </div>
+        </div>
+      </div>
+      <div id="agentResult"></div>
+    </section>
+
+    <!-- ---------- Protocols ---------- -->
+    <section class="page" id="page-protocols">
+      <div class="header">
+        <div><h1>協議風險分析</h1><div class="header-subtitle">多因子風險模型：合約、收益波動、流動性、TVL 流失、無常損失、獎勵依賴、價格波動、脫鉤</div></div>
+        <div class="header-right">
+          <input class="form-input" id="protoSearch" placeholder="搜尋協議 / 代幣 / 鏈" style="width:220px">
+          <div class="seg" id="protoFilter"><button class="active" data-f="all">全部</button><button data-f="stable">穩定幣</button><button data-f="vol">波動資產</button></div>
+        </div>
+      </div>
+      <div class="card"><div class="table-wrap"><table id="protoTable"></table></div>
+        <p class="note" style="margin-top:12px">風險分數 0–100（越高越危險），A ＜18 ≤ B ＜28 ≤ C ＜40 ≤ D ＜55 ≤ E。預測 APY 採阻尼 Holt 線性趨勢模型，再依殘差標準差做保守折減。「ML 趨勢」欄位來自 DefiLlama 的分類模型。</p>
+      </div>
+    </section>
+
+    <!-- ---------- Backtest ---------- -->
+    <section class="page" id="page-backtest">
+      <div class="header">
+        <div><h1>策略回測</h1><div class="header-subtitle">Walk-forward 回測：每次再平衡只使用當下以前的資料（無未來函數），含交易成本與滑價</div></div>
+      </div>
+      <div class="card" style="margin-bottom:22px">
+        <div class="form-row" style="align-items:end;margin-bottom:0">
+          <div><label class="form-label">Agent 風險偏好</label><div class="seg" id="btProfile"><button data-v="conservative">保守</button><button data-v="balanced" class="active">平衡</button><button data-v="aggressive">積極</button></div></div>
+          <div><label class="form-label" for="btEvery">再平衡頻率</label><select class="form-select" id="btEvery"><option value="1">每日</option><option value="7" selected>每週</option><option value="14">每兩週</option><option value="30">每月</option></select></div>
+          <div><label class="form-label" for="btCost">交易成本（bps / 換手）</label><input class="form-input num" id="btCost" type="number" value="10" min="0" max="200"></div>
+          <div><label class="chk" style="margin-bottom:10px"><input type="checkbox" id="btStable">只用穩定幣</label><button class="btn primary" id="runBt" style="width:100%">執行回測</button></div>
+        </div>
+      </div>
+      <div class="grid g4" id="btStats"></div>
+      <div class="card" style="margin-bottom:22px">
+        <div class="card-header"><div><div class="card-title">淨值曲線（USD 計價）</div><div class="card-desc">起始 = 1.00；含收益、幣價波動與無常損失</div></div></div>
+        <div class="chart-box lg"><canvas id="btChart"></canvas></div>
+      </div>
+      <div class="grid g-1-2">
+        <div class="card"><div class="card-header"><div class="card-title">績效比較</div></div><div class="table-wrap"><table id="btTable"></table></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title">Agent 配置演變</div><div class="card-desc">各再平衡時點的權重</div></div></div><div class="chart-box"><canvas id="btAlloc"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- ---------- RL ---------- -->
+    <section class="page" id="page-rl">
+      <div class="header">
+        <div><h1>強化學習策略層</h1><div class="header-subtitle">Q-Learning 依市場狀態（ETH 動能 × 波動度 × 收益利差）學習何時該防守、何時該進攻</div></div>
+      </div>
+      <div class="card" style="margin-bottom:22px">
+        <div class="form-row" style="align-items:end;margin-bottom:0">
+          <div><label class="form-label" for="rlEp">訓練回合數：<span id="rlEpV">300</span></label><input type="range" id="rlEp" min="50" max="1000" step="50" value="300"></div>
+          <div><label class="form-label" for="rlRisk">回撤懲罰係數：<span id="rlRiskV">3</span></label><input type="range" id="rlRisk" min="0" max="10" step="0.5" value="3"></div>
+          <div><label class="form-label" for="rlSeed">隨機種子</label><input class="form-input num" id="rlSeed" type="number" value="42"></div>
+          <div><button class="btn primary" id="runRl" style="width:100%">訓練 Agent</button></div>
+        </div>
+      </div>
+      <div class="grid g4" id="rlStats"></div>
+      <div class="grid g2">
+        <div class="card"><div class="card-header"><div><div class="card-title">訓練曲線</div><div class="card-desc">每回合累積獎勵（ε-greedy 探索逐步衰減）</div></div></div><div class="chart-box"><canvas id="rlCurve"></canvas></div></div>
+        <div class="card"><div class="card-header"><div><div class="card-title">樣本外測試</div><div class="card-desc">最後 35% 的週數，Agent 從未見過</div></div></div><div class="chart-box"><canvas id="rlTest"></canvas></div></div>
+      </div>
+      <div class="card"><div class="card-header"><div><div class="card-title">學到的策略（Q-Table）</div><div class="card-desc">每列是一種市場狀態；外框 = 該狀態下 Agent 選擇的動作；n = 訓練中造訪次數</div></div></div><div class="table-wrap"><table class="qtable" id="qTable"></table></div></div>
+    </section>
+
+    <!-- ---------- Monitor ---------- -->
+    <section class="page" id="page-monitor">
+      <div class="header">
+        <div><h1>即時監控與自動再平衡</h1><div class="header-subtitle">Agent 持續檢查持倉的 APY、TVL、風險分數與權重偏離，觸發條件時提出（或自動執行）調整</div></div>
+        <div class="header-right">
+          <button class="icon-btn" data-sync><span class="live-dot" data-live></span><span data-sync-label>同步即時資料</span></button>
+          <label class="chk" style="margin:0">自動執行<button class="switch" id="autoRebal" aria-label="自動再平衡"></button></label>
+        </div>
+      </div>
+      <div class="grid g4" id="monStats"></div>
+      <div class="grid g-2-1">
+        <div class="card"><div class="card-header"><div><div class="card-title">持倉健康度</div><div class="card-desc" id="monSrc">尚未建立投資組合，將以平衡型示範組合開始</div></div></div><div class="table-wrap"><table id="monTable"></table></div></div>
+        <div class="card">
+          <div class="card-header"><div><div class="card-title">市場衝擊模擬器</div><div class="card-desc">注入事件，觀察 Agent 如何反應</div></div></div>
+          <div class="shock-grid" id="shocks"></div>
+          <button class="btn sm" id="resetShock" style="margin-top:12px">↺ 重設市場</button>
+        </div>
+      </div>
+      <div class="grid g2">
+        <div class="card"><div class="card-header"><div class="card-title">再平衡建議</div><button class="btn primary sm" id="applyRebal" disabled>執行調整</button></div><div id="rebalBox"><div class="empty">目前沒有觸發條件 ✓</div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">Agent 事件日誌</div></div><div class="log" id="monLog"></div></div>
+      </div>
+    </section>
+
+    <!-- ---------- About ---------- -->
+    <section class="page" id="page-about">
+      <div class="header"><div><h1>專題說明與系統架構</h1><div class="header-subtitle">2026 生成式 AI／AI Agent 於企業實務之應用：題目十四 DeFi 智能投資 AI Agent（Yield + Risk Optimization）</div></div></div>
+      <div class="grid g2">
+        <div class="card prose">
+          <div class="card-title" style="color:var(--text-primary)">商業情境與痛點</div>
+          <p>DeFi 收益高，但風險結構複雜（流動性池、清算、智能合約、穩定幣脫鉤、獎勵代幣通膨），一般投資人很難比較「Aave 的 3%」和「Uniswap LP 的 20%」哪個划算。</p>
+          <h3>YieldPilot 的解法</h3>
+          <ul>
+            <li><b>分析不同 DeFi 協議</b>：15 個協議、30 個池子，8 個風險因子的評分模型</li>
+            <li><b>預測收益與風險</b>：阻尼 Holt 時序預測 APY，加上歷史模擬法 VaR／CVaR 與壓力測試</li>
+            <li><b>自動配置資產</b>：均值-變異數最佳化，加入風險懲罰、集中度上限與穩定幣下限</li>
+            <li><b>即時調整組合</b>：監控觸發條件 → 再平衡建議／自動執行，並可模擬市場衝擊</li>
+            <li><b>LLM 策略解釋</b>：可接 Claude API，用白話說明配置理由；未設定時改用規則式模板生成</li>
+            <li><b>可回測</b>：walk-forward 回測，與 5 種基準比較；RL 策略層另做樣本外驗證</li>
+          </ul>
+        </div>
+        <div class="card prose">
+          <div class="card-title" style="color:var(--text-primary)">技術建議 → 實作對照</div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>題目建議</th><th>本 POC 實作</th></tr></thead>
+            <tbody>
+              <tr><td>Reinforcement Learning</td><td>表格式 Q-Learning（12 狀態 × 3 動作）</td></tr>
+              <tr><td>Time-series forecasting</td><td>阻尼 Holt 線性趨勢 + 30 日中位數混合</td></tr>
+              <tr><td>Risk modeling (VaR)</td><td>歷史模擬 VaR／CVaR 95%、參數 VaR、5 種壓力情境</td></tr>
+              <tr><td>LLM 策略解釋</td><td>Claude Messages API（自備 key）／模板生成</td></tr>
+              <tr><td>自動投資模擬器</td><td>即時監控 + 衝擊模擬 + 自動再平衡</td></tr>
+              <tr><td>Backtesting</td><td>Walk-forward，含成本，與 5 種基準比較</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:22px">
+        <div class="card-header"><div class="card-title">Agent 架構（Perceive → Reason → Act → Explain）</div></div>
+        <div class="flow">
+          <div class="node"><b>① 感知 Perceive</b><span>DefiLlama Yields API：APY、TVL、ML 趨勢；ETH/BTC 價格。GitHub Actions 每日更新快照，瀏覽器也可即時同步</span></div><div class="arrow">→</div>
+          <div class="node"><b>② 風險評估</b><span>8 因子加權風險分數 A–E；IL 以恆定乘積公式並放大 2.5×（V3 集中流動性）</span></div><div class="arrow">→</div>
+          <div class="node"><b>③ 收益預測</b><span>Holt 時序模型，信賴區間，不確定性折減</span></div><div class="arrow">→</div>
+          <div class="node"><b>④ 組合最佳化</b><span>max μᵀw − λ/2·wᵀΣw − γ·風險ᵀw，帶上限的單純形投影梯度法</span></div><div class="arrow">→</div>
+          <div class="node"><b>⑤ 驗證</b><span>VaR／CVaR、壓力測試、回測、RL 策略選擇</span></div><div class="arrow">→</div>
+          <div class="node"><b>⑥ 解釋與行動</b><span>LLM 生成白話報告；監控觸發再平衡</span></div>
+        </div>
+      </div>
+      <div class="grid g2">
+        <div class="card prose">
+          <div class="card-title" style="color:var(--text-primary)">限制與後續發展</div>
+          <ul>
+            <li>本系統為學術 POC，<b>不會連接錢包或執行任何真實交易</b></li>
+            <li>LP 報酬以 50/50 恆定乘積模型近似，未模擬 V3 區間外的情況</li>
+            <li>歷史約一年，RL 樣本有限，結果僅供方法展示</li>
+            <li>後續：鏈上清算監控、Gas 最佳化路由、多鏈橋接風險、Deep RL（PPO）</li>
+          </ul>
+        </div>
+        <div class="card prose">
+          <div class="card-title" style="color:var(--text-primary)">資料來源與致謝</div>
+          <ul>
+            <li>收益與價格資料：<a href="https://defillama.com/yields" target="_blank" rel="noopener">DefiLlama</a>（公開 API）</li>
+            <li>介面設計改編自 TemplateMo <a href="https://templatemo.com/tm-609-crypto-vault" target="_blank" rel="noopener">609 Crypto Vault</a></li>
+            <li>圖表：Chart.js；LLM：Anthropic Claude（選用）</li>
+            <li>部署：GitHub Pages 靜態網站 + GitHub Actions 每日更新資料</li>
+          </ul>
+        </div>
+      </div>
+      <div class="disclaimer">⚠️ 免責聲明：本網站為課程作業的概念驗證（POC），所有配置、預測與回測結果僅供教學與研究展示，不構成任何投資建議。DeFi 存在智能合約漏洞、脫鉤、清算等可能導致本金全損的風險。</div>
+    </section>
+
+    <footer class="copyright">YieldPilot · DeFi 智能投資 AI Agent POC · 資料來源 <a href="https://defillama.com" target="_blank" rel="noopener">DefiLlama</a> · 設計改編自 <a href="https://templatemo.com/tm-609-crypto-vault" target="_blank" rel="noopener">TemplateMo Crypto Vault</a> · 非投資建議</footer>
+  </main>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-bg" id="settingsModal">
+  <div class="modal narrow">
+    <div class="modal-head"><div><div class="card-title">LLM 策略解釋設定</div><div class="card-desc">選用：填入 Anthropic API Key，就能用 Claude 生成策略解釋與回答追問</div></div><button class="close-x" data-close>&times;</button></div>
+    <label class="form-label" for="apiKey">Anthropic API Key</label>
+    <input class="form-input" id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off" style="margin-bottom:14px">
+    <label class="form-label" for="apiModel">模型</label>
+    <select class="form-select" id="apiModel" style="margin-bottom:14px">
+      <option value="claude-opus-5-5">Claude Opus 5.5（預設）</option>
+      <option value="claude-sonnet-5-5">Claude Sonnet 5.5</option>
+      <option value="claude-haiku-5-5">Claude Haiku 5.5</option>
+    </select>
+    <p class="note" style="margin-bottom:16px">Key 只存在你自己的瀏覽器（localStorage），由瀏覽器直接呼叫 api.anthropic.com，不會經過任何其他伺服器。未設定時，Agent 改用內建規則引擎生成解釋，所有功能都能正常使用。</p>
+    <div class="btn-row"><button class="btn primary" id="saveKey">儲存</button><button class="btn" id="clearKey">清除 Key</button></div>
+  </div>
+</div>
+
+<!-- Pool detail modal -->
+<div class="modal-bg" id="poolModal">
+  <div class="modal">
+    <div class="modal-head"><div id="pmHead"></div><button class="close-x" data-close>&times;</button></div>
+    <div class="grid g4" id="pmStats" style="margin-bottom:18px"></div>
+    <div class="card-title" style="font-size:15px;margin-bottom:8px">APY 歷史與 30 日預測（95% 信賴區間）</div>
+    <div class="chart-box sm" style="margin-bottom:18px"><canvas id="pmChart"></canvas></div>
+    <div class="grid g2" style="margin-bottom:0">
+      <div><div class="card-title" style="font-size:15px;margin-bottom:8px">風險因子拆解</div><div class="chart-box sm"><canvas id="pmRisk"></canvas></div></div>
+      <div class="prose" id="pmNote" style="font-size:14px"></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="js/engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
